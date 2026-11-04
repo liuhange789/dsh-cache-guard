@@ -1,0 +1,45 @@
+export interface SessionWindowSummary {
+  messageCount: number;
+  toolsetHash: string;
+  systemPromptHash: string;
+}
+
+export interface SessionSnapshot {
+  messageCount: number;
+  toolsetHash: string;
+  systemPromptHash: string;
+  contextTokenDelta: number;
+  consecutiveToolCalls: number;
+  lastSignalAt: number;
+  capturedAt: number;
+}
+
+export function createSessionSnapshot(
+  fields: Omit<SessionSnapshot, 'capturedAt'> & { capturedAt?: number },
+): SessionSnapshot {
+  return {
+    messageCount: fields.messageCount,
+    toolsetHash: fields.toolsetHash,
+    systemPromptHash: fields.systemPromptHash,
+    contextTokenDelta: fields.contextTokenDelta,
+    consecutiveToolCalls: fields.consecutiveToolCalls,
+    lastSignalAt: fields.lastSignalAt,
+    capturedAt: fields.capturedAt ?? Date.now(),
+  };
+}
+
+export function toSummary(snapshot: SessionSnapshot): SessionWindowSummary {
+  return {
+    messageCount: snapshot.messageCount,
+    toolsetHash: snapshot.toolsetHash,
+    systemPromptHash: snapshot.systemPromptHash,
+  };
+}
+
+export function byteSize(snapshot: SessionSnapshot): number {
+  return (
+    snapshot.toolsetHash.length +
+    snapshot.systemPromptHash.length +
+    48
+  );
+}
