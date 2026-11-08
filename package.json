@@ -2,7 +2,6 @@
   "name": "dsh-cache-guard",
   "version": "0.1.0",
   "description": "DSH 缓存健康度守卫与省钱教练",
-  "private": true,
   "type": "module",
   "workspaces": [
     "host",
@@ -10,11 +9,14 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
+    "prepare": "npm run build",
     "test": "npm run test --workspaces",
     "typecheck": "npm run typecheck --workspaces"
   },
+  "dependencies": {
+    "typescript": "^5.4.0"
+  },
   "devDependencies": {
-    "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   },
   "dsh": {
