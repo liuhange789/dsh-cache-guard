@@ -1,12 +1,14 @@
-import { recomputeAndPush, resetStateForNewSession } from './listenerState.ts';
-import { createSessionSnapshot } from '../model/sessionSnapshot.ts';
-import { hashSystemPrompt } from '../engine/hashUtil.ts';
+import { createLog } from "../types/dshContext.js";
+import { recomputeAndPush, resetStateForNewSession } from "./listenerState.js";
+import { createSessionSnapshot } from "../model/sessionSnapshot.js";
+import { hashSystemPrompt } from "../engine/hashUtil.js";
 export function registerSessionListener(deps) {
     const { ctx, state, window, getProfile } = deps;
+    const log = createLog(ctx);
     const handler = (...args) => {
         const frame = args[0];
         if (!frame) {
-            ctx.log('warn', 'sessionListener: frame missing');
+            log('warn', 'sessionListener: frame missing');
             return;
         }
         const now = Date.now();
@@ -16,7 +18,7 @@ export function registerSessionListener(deps) {
         }
         if (frame.type === 'system_prompt_change') {
             if (typeof frame.systemPrompt !== 'string') {
-                ctx.log('warn', 'sessionListener: systemPrompt missing');
+                log('warn', 'sessionListener: systemPrompt missing');
                 return;
             }
             const newHash = hashSystemPrompt(frame.systemPrompt);

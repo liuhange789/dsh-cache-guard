@@ -4,3 +4,4 @@ export interface ToolPreExecFrame {
     toolSchemas?: string[];
 }
 export declare function registerToolPreExecListener(deps: PipelineDeps): Disposer;
+//# sourceMappingURL=toolPreExecListener.d.ts.map

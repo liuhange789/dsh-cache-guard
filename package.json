@@ -1,20 +1,41 @@
 {
   "name": "dsh-cache-guard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DSH 缓存健康度守卫与省钱教练",
   "type": "module",
+  "main": "./host/dist/index.js",
+  "types": "./host/dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./host/dist/index.d.ts",
+      "default": "./host/dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host/dist",
+    "host/package.json",
+    "cordis.patch.yml",
+    "README.md"
+  ],
   "workspaces": [
-    "host",
-    "client"
+    "host"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
     "prepare": "npm run build",
-    "test": "npm run test --workspaces",
+    "test": "vitest run --config vitest.config.ts --isolate=false",
     "typecheck": "npm run typecheck --workspaces"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liuhange789/dsh-cache-guard.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.7.0"
   },
   "devDependencies": {
     "vitest": "^1.6.0"

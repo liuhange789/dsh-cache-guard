@@ -6,3 +6,4 @@ export declare const VALID_SENSITIVITIES: readonly Sensitivity[];
 export declare const VALID_TRIGGER_REASONS: readonly TriggerReason[];
 export declare function isSensitivity(value: unknown): value is Sensitivity;
 export declare function isTriggerReason(value: unknown): value is TriggerReason;
+//# sourceMappingURL=types.d.ts.map

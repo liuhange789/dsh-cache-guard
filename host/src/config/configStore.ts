@@ -2,10 +2,8 @@ import type { PluginConfig } from '../model/pluginConfig.ts';
 import { DEFAULT_PLUGIN_CONFIG, clonePluginConfig } from '../model/pluginConfig.ts';
 import type { Sensitivity } from '../model/types.ts';
 import { isSensitivity } from '../model/types.ts';
-import type { DshHostContext } from '../types/dshContext.ts';
-import type { Disposer } from '../types/dshContext.ts';
+import type { Disposer, LogFn } from '../types/dshContext.ts';
 
-export const ERR_CFG_WRITE_FAILED = 'CFG_WRITE_FAILED';
 export const ERR_INVALID_SENSITIVITY = 'INVALID_SENSITIVITY';
 
 export interface ConfigWriteResult {
@@ -13,12 +11,18 @@ export interface ConfigWriteResult {
   errorCode: string | null;
 }
 
+/**
+ * 配置来源是装载时传入的 cordis config（`pluginConfig`），不再是虚构的运行期 config 服务。
+ * read/load/write/subscribe 的语义保持不变：write 只对当前插件实例生效，并通知订阅者。
+ */
 export class ConfigStore {
   private current: PluginConfig = clonePluginConfig(DEFAULT_PLUGIN_CONFIG);
-  private readonly ctx: DshHostContext | null;
+  private readonly log: LogFn | null;
+  private readonly subscribers = new Set<(config: PluginConfig) => void>();
 
-  constructor(ctx: DshHostContext | null = null) {
-    this.ctx = ctx;
+  constructor(initial: Record<string, unknown> | null = null, log: LogFn | null = null) {
+    this.log = log;
+    this.current = this.normalize(initial ?? {});
   }
 
   read(): PluginConfig {
@@ -26,55 +30,31 @@ export class ConfigStore {
   }
 
   async load(): Promise<PluginConfig> {
-    if (!this.ctx) {
-      return this.read();
-    }
-    try {
-      const raw = await this.ctx.config.read();
-      if (!raw) {
-        this.current = clonePluginConfig(DEFAULT_PLUGIN_CONFIG);
-        return this.read();
-      }
-      this.current = this.normalize(raw);
-      return this.read();
-    } catch {
-      this.ctx.log('warn', 'ConfigStore: config read failed, using defaults');
-      this.current = clonePluginConfig(DEFAULT_PLUGIN_CONFIG);
-      return this.read();
-    }
+    return this.read();
   }
 
   async write(patch: Partial<PluginConfig>): Promise<ConfigWriteResult> {
     if (patch.sensitivity !== undefined && !isSensitivity(patch.sensitivity)) {
       return { config: this.read(), errorCode: ERR_INVALID_SENSITIVITY };
     }
-    const next: PluginConfig = {
+    this.current = {
       enabled: patch.enabled ?? this.current.enabled,
       sensitivity: (patch.sensitivity ?? this.current.sensitivity) as Sensitivity,
       showPtcHint: patch.showPtcHint ?? this.current.showPtcHint,
     };
-    if (!this.ctx) {
-      this.current = next;
-      return { config: this.read(), errorCode: null };
+    const next = this.read();
+    for (const handler of this.subscribers) {
+      handler(next);
     }
-    try {
-      await this.ctx.config.write(next as unknown as Record<string, unknown>);
-      this.current = next;
-      return { config: this.read(), errorCode: null };
-    } catch {
-      this.ctx.log('warn', 'ConfigStore: config write failed', { code: ERR_CFG_WRITE_FAILED });
-      return { config: this.read(), errorCode: ERR_CFG_WRITE_FAILED };
-    }
+    return { config: next, errorCode: null };
   }
 
   subscribe(handler: (config: PluginConfig) => void): Disposer {
-    if (!this.ctx) {
-      return () => {};
-    }
-    return this.ctx.config.subscribe((raw) => {
-      this.current = this.normalize(raw);
-      handler(this.read());
-    });
+    this.subscribers.add(handler);
+    handler(this.read());
+    return () => {
+      this.subscribers.delete(handler);
+    };
   }
 
   private normalize(raw: Record<string, unknown>): PluginConfig {
@@ -84,7 +64,7 @@ export class ConfigStore {
       ? (raw.sensitivity as Sensitivity)
       : DEFAULT_PLUGIN_CONFIG.sensitivity;
     if (raw.sensitivity !== undefined && !isSensitivity(raw.sensitivity)) {
-      this.ctx?.log('warn', 'ConfigStore: invalid sensitivity, falling back to standard', {
+      this.log?.('warn', 'ConfigStore: invalid sensitivity, falling back to standard', {
         received: raw.sensitivity,
       });
     }

@@ -1,4 +1,5 @@
 import type { Disposer } from '../types/dshContext.ts';
+import { createLog } from '../types/dshContext.ts';
 import type { PipelineDeps } from './listenerState.ts';
 import { recomputeAndPush } from './listenerState.ts';
 import { createSessionSnapshot } from '../model/sessionSnapshot.ts';
@@ -12,15 +13,16 @@ export function registerStreamListener(
   deps: PipelineDeps,
 ): Disposer {
   const { ctx, state, window } = deps;
+  const log = createLog(ctx);
 
   const handler = (...args: unknown[]): void => {
     const frame = args[0] as StreamFrame | undefined;
     if (!frame) {
-      ctx.log('warn', 'streamListener: frame missing');
+      log('warn', 'streamListener: frame missing');
       return;
     }
     if (typeof frame.tokenDelta !== 'number' || typeof frame.messageCount !== 'number') {
-      ctx.log('warn', 'streamListener: required fields missing');
+      log('warn', 'streamListener: required fields missing');
       return;
     }
 

@@ -1,4 +1,4 @@
-import { byteSize } from './sessionSnapshot.ts';
+import { byteSize } from "./sessionSnapshot.js";
 export const MAX_WINDOW_BYTES = 512 * 1024;
 export const MAX_WINDOW_ENTRIES = 256;
 export class SnapshotWindow {

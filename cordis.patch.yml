@@ -1,18 +1,4 @@
 # Cordis Framework Patch Declaration for dsh-cache-guard
-- target: loaders.web
-  action: insert
-  entry:
-    id: "dsh-cache-guard"
-    name: "dsh-cache-guard"
-    version: "0.1.0"
-- target: loaders.headless
-  action: insert
-  entry:
-    id: "dsh-cache-guard"
-    name: "dsh-cache-guard"
-    version: "0.1.0"
-- target: tools
-  action: register
-  description: Register cache guard plugin tools into Cordis runtime
-  plugin: "dsh-cache-guard"
-  version: "0.1.0"
+- insert:
+    - id: dsh-cache-guard
+      name: dsh-cache-guard

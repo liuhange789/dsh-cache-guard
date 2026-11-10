@@ -1,16 +1,18 @@
-import { recomputeAndPush } from './listenerState.ts';
-import { createSessionSnapshot } from '../model/sessionSnapshot.ts';
-import { hashToolset } from '../engine/hashUtil.ts';
+import { createLog } from "../types/dshContext.js";
+import { recomputeAndPush } from "./listenerState.js";
+import { createSessionSnapshot } from "../model/sessionSnapshot.js";
+import { hashToolset } from "../engine/hashUtil.js";
 export function registerToolPreExecListener(deps) {
     const { ctx, state, window, getConfig, getProfile } = deps;
+    const log = createLog(ctx);
     const handler = (...args) => {
         const frame = args[0];
         if (!frame) {
-            ctx.log('warn', 'toolPreExecListener: frame missing');
+            log('warn', 'toolPreExecListener: frame missing');
             return;
         }
         if (!Array.isArray(frame.toolSchemas)) {
-            ctx.log('warn', 'toolPreExecListener: toolSchemas missing');
+            log('warn', 'toolPreExecListener: toolSchemas missing');
             return;
         }
         const now = Date.now();

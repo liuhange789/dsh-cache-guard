@@ -10,3 +10,4 @@ export interface EngineInput {
     now: number;
 }
 export declare function compute(input: EngineInput): HealthSignal;
+//# sourceMappingURL=healthSignalEngine.d.ts.map

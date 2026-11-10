@@ -1,13 +1,13 @@
 import type { HealthSignal } from './model/healthSignal.ts';
 import type { PluginConfig } from './model/pluginConfig.ts';
 import type { Sensitivity } from './model/types.ts';
-import type { DshHostContext } from './types/dshContext.ts';
+import type { LogFn } from './types/dshContext.ts';
 
 export class AuditLogger {
-  private readonly ctx: DshHostContext | null;
+  private readonly log: LogFn | null;
 
-  constructor(ctx: DshHostContext | null = null) {
-    this.ctx = ctx;
+  constructor(log: LogFn | null = null) {
+    this.log = log;
   }
 
   logSignalChange(
@@ -18,7 +18,7 @@ export class AuditLogger {
     if (prev.level === next.level && prev.triggerReason === next.triggerReason) {
       return;
     }
-    this.ctx?.log('info', 'signal_change', {
+    this.log?.('info', 'signal_change', {
       from: prev.level,
       to: next.level,
       triggerReason: next.triggerReason,
@@ -32,21 +32,21 @@ export class AuditLogger {
     next: PluginConfig,
   ): void {
     if (prev.sensitivity !== next.sensitivity) {
-      this.ctx?.log('info', 'config_change', {
+      this.log?.('info', 'config_change', {
         field: 'sensitivity',
         from: prev.sensitivity,
         to: next.sensitivity,
       });
     }
     if (prev.showPtcHint !== next.showPtcHint) {
-      this.ctx?.log('info', 'config_change', {
+      this.log?.('info', 'config_change', {
         field: 'showPtcHint',
         from: prev.showPtcHint,
         to: next.showPtcHint,
       });
     }
     if (prev.enabled !== next.enabled) {
-      this.ctx?.log('info', 'config_change', {
+      this.log?.('info', 'config_change', {
         field: 'enabled',
         from: prev.enabled,
         to: next.enabled,

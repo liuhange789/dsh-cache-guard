@@ -1,6 +1,6 @@
-import { compute } from '../engine/healthSignalEngine.ts';
-import { createNoneSignal, createGreenSignal } from '../model/healthSignal.ts';
-import { toSummary } from '../model/sessionSnapshot.ts';
+import { compute } from "../engine/healthSignalEngine.js";
+import { createNoneSignal, createGreenSignal } from "../model/healthSignal.js";
+import { toSummary } from "../model/sessionSnapshot.js";
 export function createListenerState() {
     return {
         messageCount: 0,

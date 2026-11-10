@@ -7,3 +7,4 @@ export interface SensitivityProfile {
     greenStableFrames: number;
 }
 export declare function resolveProfile(sensitivity: Sensitivity): SensitivityProfile;
+//# sourceMappingURL=sensitivityProfile.d.ts.map

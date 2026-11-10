@@ -29,3 +29,4 @@ export interface PipelineDeps {
 }
 export declare function recomputeAndPush(deps: PipelineDeps, now: number): void;
 export declare function resetStateForNewSession(deps: PipelineDeps, now: number): void;
+//# sourceMappingURL=listenerState.d.ts.map

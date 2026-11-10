@@ -1,15 +1,17 @@
-import { recomputeAndPush } from './listenerState.ts';
-import { createSessionSnapshot } from '../model/sessionSnapshot.ts';
+import { createLog } from "../types/dshContext.js";
+import { recomputeAndPush } from "./listenerState.js";
+import { createSessionSnapshot } from "../model/sessionSnapshot.js";
 export function registerStreamListener(deps) {
     const { ctx, state, window } = deps;
+    const log = createLog(ctx);
     const handler = (...args) => {
         const frame = args[0];
         if (!frame) {
-            ctx.log('warn', 'streamListener: frame missing');
+            log('warn', 'streamListener: frame missing');
             return;
         }
         if (typeof frame.tokenDelta !== 'number' || typeof frame.messageCount !== 'number') {
-            ctx.log('warn', 'streamListener: required fields missing');
+            log('warn', 'streamListener: required fields missing');
             return;
         }
         const now = Date.now();

@@ -4,16 +4,16 @@ DSH 缓存健康度守卫与省钱教练 — 事前干预，不是事后计费�
 
 ## 简介
 
-`dsh-cache-guard` 是一个 [DSH](https://github.com/deepseek-ai/dsh) (DeepSeek Harness) 插件，在会话过程中监听缓存失效信号，通过状态灯（绿/黄/红）和一行干预建议引导用户调整会话行为，降低 KV Cache 失效导致的成本浪费。
+`dsh-cache-guard` 是一个 [DSH](https://github.com/deepseek-ai/dsh) (DeepSeek Harness) 插件，在会话过程中监听缓存失效信号，给出绿/黄/红健康度、一行干预建议与 PTC 提示，引导用户调整会话行为，降低 KV Cache 失效导致的成本浪费。
 
 ### 核心能力
 
 | 能力 | 说明 |
 |---|---|
-| 缓存健康度状态灯 | 绿/黄/红三色圆点，8px 原生 DOM 渲染 |
-| 黄灯一行干预建议 | ≤20 字简体中文，30s 节流，PTC 优先 |
-| PTC 模式切换提示 | 长工具链场景，5min 节流 |
-| 设置面板 | enabled / sensitivity / showPtcHint 三配置项 |
+| 缓存健康度 | `cache_guard_health` 工具返回 `green` / `yellow` / `red` / `none` 与触发原因 |
+| 一行干预建议 | ≤20 字简体中文，PTC 优先（随健康度工具一起返回） |
+| PTC 模式切换提示 | 长工具链场景，5min 节流后置位 `ptcHintActive` |
+| 配置读写 | `cache_guard_config` 工具读写 enabled / sensitivity / showPtcHint（对当前插件实例生效） |
 
 ### 不做的事
 
@@ -24,35 +24,34 @@ DSH 缓存健康度守卫与省钱教练 — 事前干预，不是事后计费�
 
 ## 架构
 
-DSH both 模式（Host + Client 双包）：
+Host-only 插件（`inject: ['tools']`），信号通过两个工具对外提供：
 
 ```
 dsh-cache-guard/
-├── host/          # Host 侧：事件监听 + 信号引擎 + 轻量 API
+├── host/          # Host 侧：事件监听 + 信号引擎 + 工具注册
 │   └── src/
 │       ├── listeners/    # 三事件监听器
 │       ├── engine/       # 启发式判定引擎 + 节流器
 │       ├── model/        # 数据模型 + 滑动窗口
-│       └── config/       # 配置 schema + 容错读取
-├── client/        # Client 侧：UI 渲染 + 通信封装
-│   └── src/
-│       ├── ui/           # statusDot + hintLine + settingsPanel
-│       └── hostClient.ts # host.call() RPC 封装
+│       ├── config/       # 配置 schema + 装载期配置归一化
+│       └── tools.ts      # cache_guard_health / cache_guard_config
+├── client/        # 历史浏览器侧源码（未随包发布，见下）
 └── vitest.config.ts
 ```
 
+> `client/` 里的状态灯 / 设置面板建立在 `ctx.ui.*`、`ctx.expose`、`ctx.push` 之上，这些 API 在 DSH 的 Host Context 上并不存在，浏览器侧也没有 host→client 的数据通道。本轮把它们下线，`dsh.client`、`exports["./client"]`、`files` 里都不再包含 client；同样的能力改由上面两个工具承载。要恢复状态灯，需要先接入真实的 client 插件 API 与数据通道。
+
 ### 关键约束
 
-- Host `inject: ['agents', 'tools']`
-- Client 禁止 import `@deepseek-ai/*`
+- Host `inject: ['tools']`
 - 事件处理 ≤5ms，快照窗口 ≤512KB
 - 无网络请求，无敏感数据外泄
 
 ## 安装
 
 ```bash
-# 自动注册到 DSH 插件目录
-node scripts/auto-register.js
+# 从仓库安装（读取根 package.json 的 main → host/dist/index.js，并按 cordis.patch.yml 注入）
+dsh plugin add github:liuhange789/dsh-cache-guard
 
 # 重启 DSH
 dsh web
@@ -64,11 +63,13 @@ dsh web
 # 构建产物
 npm run build
 
-# 将 host/dist 和 client/dist 复制到 DSH 插件目录
+# 将整个包目录复制到 DSH 插件目录
 cp -r . ~/.dsh/plugins/dsh-cache-guard
 ```
 
 ## 配置
+
+装载时通过 cordis patch 的 `config` 传入；运行期可用 `cache_guard_config` 工具改写（仅对当前实例生效，不落盘）。
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
@@ -90,14 +91,15 @@ cp -r . ~/.dsh/plugins/dsh-cache-guard
 ```
 Test Files  17 passed (17)
      Tests  68 passed (68)
-  Duration  ~3s
+  Duration  ~1.2s
 ```
 
 验证覆盖：
 
-- **单元测试**：信号引擎判定（绿/黄/红优先级）、灵敏度档位单调性、节流器边界、滑动窗口容量、配置容错、文案长度、超时判定
-- **集成测试**：生命周期（装载→事件→卸载）、三事件混合优先级、配置热重载、RPC 往返、超时降级
+- **单元测试**：信号引擎判定（绿/黄/红优先级）、灵敏度档位单调性、节流器边界、滑动窗口容量、配置归一化、文案长度、超时判定
+- **集成测试**：生命周期（装载→事件→卸载）、三事件混合优先级、配置热更（装载期配置 + 工具改写）、超时降级
 - **DFX 验证**：≤5ms P99 性能、≤512KB 窗口容量、零网络调用、无敏感数据泄露、高频不丢变更
+- **真实宿主**：`cordis` + `dsh-tools` 装载后能注册两个工具，`execute` / `render` / `output.schema` 形状通过校验
 
 ```bash
 # 运行测试
@@ -108,15 +110,13 @@ npx vitest run --config vitest.config.ts --isolate=false
 
 ```bash
 # 安装依赖
-npm install --cache "C:/Users/HP/AppData/Local/Temp/npm-cache-tmp"
+npm install
 
 # 类型检查
 npx tsc --noEmit -p host/tsconfig.json
-npx tsc --noEmit -p client/tsconfig.json
 
-# 构建
-npx tsc -p host/tsconfig.build.json
-npx tsc -p client/tsconfig.build.json
+# 构建（host/tsconfig.json 继承根配置的 rewriteRelativeImportExtensions，dist 里不会残留 .ts 导入）
+npx tsc -p host/tsconfig.json
 
 # 测试
 npx vitest run --config vitest.config.ts --isolate=false

@@ -17,3 +17,4 @@ export declare function createSessionSnapshot(fields: Omit<SessionSnapshot, 'cap
 }): SessionSnapshot;
 export declare function toSummary(snapshot: SessionSnapshot): SessionWindowSummary;
 export declare function byteSize(snapshot: SessionSnapshot): number;
+//# sourceMappingURL=sessionSnapshot.d.ts.map

@@ -12,3 +12,4 @@ export declare class SnapshotWindow {
     size(): number;
     all(): readonly SessionSnapshot[];
 }
+//# sourceMappingURL=snapshotWindow.d.ts.map

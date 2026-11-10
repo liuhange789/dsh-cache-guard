@@ -1,14 +1,19 @@
-const REQUIRED_INJECTS = ['agents', 'tools'];
+import { createLog } from "./types/dshContext.js";
+const REQUIRED_INJECTS = ['tools'];
 export class LifecycleManager {
     disposers = [];
     loaded = false;
     validateInject(ctx) {
-        const inject = ctx.inject;
         for (const req of REQUIRED_INJECTS) {
-            if (!inject.includes(req)) {
-                ctx.log('error', 'LifecycleManager: missing required inject', { missing: req });
+            const service = ctx[req];
+            if (!service || typeof service !== 'object') {
+                createLog(ctx)('error', 'LifecycleManager: missing required inject', { missing: req });
                 return false;
             }
+        }
+        if (typeof ctx.tools?.register !== 'function') {
+            createLog(ctx)('error', 'LifecycleManager: tools.register unavailable');
+            return false;
         }
         return true;
     }

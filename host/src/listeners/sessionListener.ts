@@ -1,4 +1,5 @@
 import type { Disposer } from '../types/dshContext.ts';
+import { createLog } from '../types/dshContext.ts';
 import type { PipelineDeps } from './listenerState.ts';
 import { recomputeAndPush, resetStateForNewSession } from './listenerState.ts';
 import { createSessionSnapshot } from '../model/sessionSnapshot.ts';
@@ -13,11 +14,12 @@ export function registerSessionListener(
   deps: PipelineDeps,
 ): Disposer {
   const { ctx, state, window, getProfile } = deps;
+  const log = createLog(ctx);
 
   const handler = (...args: unknown[]): void => {
     const frame = args[0] as SessionEventFrame | undefined;
     if (!frame) {
-      ctx.log('warn', 'sessionListener: frame missing');
+      log('warn', 'sessionListener: frame missing');
       return;
     }
 
@@ -30,7 +32,7 @@ export function registerSessionListener(
 
     if (frame.type === 'system_prompt_change') {
       if (typeof frame.systemPrompt !== 'string') {
-        ctx.log('warn', 'sessionListener: systemPrompt missing');
+        log('warn', 'sessionListener: systemPrompt missing');
         return;
       }
       const newHash = hashSystemPrompt(frame.systemPrompt);

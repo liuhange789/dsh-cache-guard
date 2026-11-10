@@ -6,3 +6,4 @@ export interface PluginConfig {
 }
 export declare const DEFAULT_PLUGIN_CONFIG: PluginConfig;
 export declare function clonePluginConfig(config: PluginConfig): PluginConfig;
+//# sourceMappingURL=pluginConfig.d.ts.map

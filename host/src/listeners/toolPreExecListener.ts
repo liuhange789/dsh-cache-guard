@@ -1,4 +1,5 @@
 import type { Disposer } from '../types/dshContext.ts';
+import { createLog } from '../types/dshContext.ts';
 import type { PipelineDeps } from './listenerState.ts';
 import { recomputeAndPush } from './listenerState.ts';
 import { createSessionSnapshot } from '../model/sessionSnapshot.ts';
@@ -12,15 +13,16 @@ export function registerToolPreExecListener(
   deps: PipelineDeps,
 ): Disposer {
   const { ctx, state, window, getConfig, getProfile } = deps;
+  const log = createLog(ctx);
 
   const handler = (...args: unknown[]): void => {
     const frame = args[0] as ToolPreExecFrame | undefined;
     if (!frame) {
-      ctx.log('warn', 'toolPreExecListener: frame missing');
+      log('warn', 'toolPreExecListener: frame missing');
       return;
     }
     if (!Array.isArray(frame.toolSchemas)) {
-      ctx.log('warn', 'toolPreExecListener: toolSchemas missing');
+      log('warn', 'toolPreExecListener: toolSchemas missing');
       return;
     }
 

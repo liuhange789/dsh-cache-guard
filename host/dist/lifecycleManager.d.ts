@@ -10,3 +10,4 @@ export declare class LifecycleManager {
     disposeAll(): void;
     disposeCount(): number;
 }
+//# sourceMappingURL=lifecycleManager.d.ts.map

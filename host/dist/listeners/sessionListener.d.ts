@@ -5,3 +5,4 @@ export interface SessionEventFrame {
     systemPrompt?: string;
 }
 export declare function registerSessionListener(deps: PipelineDeps): Disposer;
+//# sourceMappingURL=sessionListener.d.ts.map

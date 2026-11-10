@@ -5,3 +5,4 @@ export interface StreamFrame {
     messageCount?: number;
 }
 export declare function registerStreamListener(deps: PipelineDeps): Disposer;
+//# sourceMappingURL=streamListener.d.ts.map

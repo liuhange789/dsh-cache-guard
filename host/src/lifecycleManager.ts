@@ -1,19 +1,24 @@
 import type { Disposer } from './types/dshContext.ts';
 import type { DshHostContext } from './types/dshContext.ts';
+import { createLog } from './types/dshContext.ts';
 
-const REQUIRED_INJECTS: readonly string[] = ['agents', 'tools'];
+const REQUIRED_INJECTS: readonly string[] = ['tools'];
 
 export class LifecycleManager {
   private readonly disposers: Disposer[] = [];
   private loaded = false;
 
   validateInject(ctx: DshHostContext): boolean {
-    const inject = ctx.inject;
     for (const req of REQUIRED_INJECTS) {
-      if (!inject.includes(req)) {
-        ctx.log('error', 'LifecycleManager: missing required inject', { missing: req });
+      const service = ctx[req as 'tools'];
+      if (!service || typeof service !== 'object') {
+        createLog(ctx)('error', 'LifecycleManager: missing required inject', { missing: req });
         return false;
       }
+    }
+    if (typeof ctx.tools?.register !== 'function') {
+      createLog(ctx)('error', 'LifecycleManager: tools.register unavailable');
+      return false;
     }
     return true;
   }

@@ -1,5 +1,5 @@
-import { toSummary } from '../model/sessionSnapshot.ts';
-import { createNoneSignal, createGreenSignal, createYellowSignal, createRedSignal, } from '../model/healthSignal.ts';
+import { toSummary } from "../model/sessionSnapshot.js";
+import { createNoneSignal, createGreenSignal, createYellowSignal, createRedSignal, } from "../model/healthSignal.js";
 export function compute(input) {
     const { snapshots, profile, toolsetChanged, systemPromptRewrite, now } = input;
     const latest = snapshots[snapshots.length - 1];

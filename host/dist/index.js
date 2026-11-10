@@ -1,25 +1,36 @@
-import { LifecycleManager } from './lifecycleManager.ts';
-import { ConfigStore } from './config/configStore.ts';
-import { resolveProfile } from './model/sensitivityProfile.ts';
-import { SnapshotWindow } from './model/snapshotWindow.ts';
-import { SignalThrottler } from './engine/signalThrottler.ts';
-import { AuditLogger } from './auditLogger.ts';
-import { HostLightApi } from './hostLightApi.ts';
-import { createListenerState } from './listeners/listenerState.ts';
-import { registerStreamListener } from './listeners/streamListener.ts';
-import { registerToolPreExecListener } from './listeners/toolPreExecListener.ts';
-import { registerSessionListener } from './listeners/sessionListener.ts';
-import { createNoneSignal } from './model/healthSignal.ts';
-import { configSchema } from './config/schema.ts';
-export const inject = ['agents', 'tools'];
-export async function setup(ctx) {
+import { createLog } from "./types/dshContext.js";
+import { LifecycleManager } from "./lifecycleManager.js";
+import { ConfigStore } from "./config/configStore.js";
+import { resolveProfile } from "./model/sensitivityProfile.js";
+import { SnapshotWindow } from "./model/snapshotWindow.js";
+import { SignalThrottler } from "./engine/signalThrottler.js";
+import { AuditLogger } from "./auditLogger.js";
+import { HostLightApi } from "./hostLightApi.js";
+import { registerCacheGuardTools } from "./tools.js";
+import { createListenerState } from "./listeners/listenerState.js";
+import { registerStreamListener } from "./listeners/streamListener.js";
+import { registerToolPreExecListener } from "./listeners/toolPreExecListener.js";
+import { registerSessionListener } from "./listeners/sessionListener.js";
+import { createNoneSignal } from "./model/healthSignal.js";
+import { configSchema } from "./config/schema.js";
+/** 只依赖 tools：信号通过 cache_guard_health / cache_guard_config 两个工具对外提供。 */
+export const inject = ['tools'];
+/**
+ * 插件入口。
+ * @param ctx Host Context
+ * @param pluginConfig cordis 加载器传入的 config（配合下面的 configSchema）
+ */
+export async function apply(ctx, pluginConfig) {
+    const log = createLog(ctx);
     const lifecycle = new LifecycleManager();
     if (!lifecycle.validateInject(ctx)) {
         return () => { };
     }
-    const configStore = new ConfigStore(ctx);
+    const configStore = new ConfigStore(typeof pluginConfig === 'object' && pluginConfig !== null
+        ? pluginConfig
+        : {}, log);
     await configStore.load();
-    const auditLogger = new AuditLogger(ctx);
+    const auditLogger = new AuditLogger(log);
     const window = new SnapshotWindow();
     const throttler = new SignalThrottler();
     const state = createListenerState();
@@ -30,7 +41,6 @@ export async function setup(ctx) {
     const onSignalChange = (signal) => {
         auditLogger.logSignalChange(currentSignal, signal, getConfig().sensitivity);
         currentSignal = signal;
-        api.pushSignal(signal);
     };
     const deps = {
         ctx,
@@ -41,14 +51,11 @@ export async function setup(ctx) {
         state,
         onSignalChange,
     };
-    const api = new HostLightApi({
-        ctx,
+    const toolDisposers = registerCacheGuardTools(ctx, new HostLightApi({
         configStore,
-        lifecycle,
         getSignal: () => currentSignal,
-        setSignal: (s) => { currentSignal = s; },
-    });
-    api.register();
+        isLoaded: () => lifecycle.isLoaded(),
+    }));
     const disposer1 = registerStreamListener(deps);
     const disposer2 = registerToolPreExecListener(deps);
     const disposer3 = registerSessionListener(deps);
@@ -58,23 +65,21 @@ export async function setup(ctx) {
             prevConfig = newConfig;
         });
     });
+    for (const disposer of toolDisposers)
+        lifecycle.registerDisposer(disposer);
     lifecycle.registerDisposer(disposer1);
     lifecycle.registerDisposer(disposer2);
     lifecycle.registerDisposer(disposer3);
     lifecycle.registerDisposer(configDisposer);
     lifecycle.markLoaded();
+    log('info', `cache-guard: active (sensitivity=${configStore.read().sensitivity})`);
     return () => {
         lifecycle.disposeAll();
         window.clear();
-        const noneSignal = createNoneSignal(Date.now());
-        currentSignal = noneSignal;
-        try {
-            ctx.push('onSignalPush', noneSignal);
-        }
-        catch {
-            // best effort
-        }
+        currentSignal = createNoneSignal(Date.now());
     };
 }
+/** 兼容只找 setup 的加载器；与 apply 是同一实现。 */
+export const setup = apply;
 export { configSchema };
 //# sourceMappingURL=index.js.map

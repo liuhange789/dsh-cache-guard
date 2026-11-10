@@ -11,3 +11,4 @@ export declare function createNoneSignal(computedAt?: number): HealthSignal;
 export declare function createGreenSignal(summary: SessionWindowSummary, computedAt?: number): HealthSignal;
 export declare function createYellowSignal(reason: TriggerReason, summary: SessionWindowSummary, computedAt?: number): HealthSignal;
 export declare function createRedSignal(summary: SessionWindowSummary, computedAt?: number): HealthSignal;
+//# sourceMappingURL=healthSignal.d.ts.map

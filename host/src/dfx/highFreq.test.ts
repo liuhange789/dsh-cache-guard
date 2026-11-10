@@ -1,62 +1,68 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setup } from '../index.ts';
-import type { DshHostContext, Disposer } from '../types/dshContext.ts';
+import type { DshHostContext, DshToolDefinition, Disposer } from '../types/dshContext.ts';
 
-function makeMockCtx(): DshHostContext & { handlers: Map<string, (...args: unknown[]) => void>; pushed: unknown[] } {
-  const handlers = new Map<string, (...args: unknown[]) => void>();
-  const pushed: unknown[] = [];
-  return {
+interface MockCtx extends DshHostContext {
+  handlers: Map<string, (...args: unknown[]) => unknown>;
+  toolDefs: Map<string, DshToolDefinition>;
+}
+
+function makeMockCtx(): MockCtx {
+  const handlers = new Map<string, (...args: unknown[]) => unknown>();
+  const toolDefs = new Map<string, DshToolDefinition>();
+  const ctx = {
     handlers,
-    pushed,
-    on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+    toolDefs,
+    on: vi.fn((event: string, handler: (...args: unknown[]) => unknown) => {
       handlers.set(event, handler);
-      return () => { handlers.delete(event); };
+      return () => {
+        handlers.delete(event);
+      };
     }),
     effect: vi.fn(<T>(fn: () => Disposer): T => fn() as unknown as T),
-    inject: ['agents', 'tools'],
     log: vi.fn(),
-    config: {
-      read: vi.fn(async () => null),
-      write: vi.fn(async () => {}),
-      subscribe: vi.fn(() => () => {}),
+    tools: {
+      register: (definition: DshToolDefinition) => {
+        toolDefs.set(definition.name, definition);
+        return () => {
+          toolDefs.delete(definition.name);
+        };
+      },
     },
-    expose: vi.fn(),
-    push: vi.fn((event: string, payload: unknown) => { pushed.push({ event, payload }); }),
   };
+  return ctx as unknown as MockCtx;
+}
+
+async function readHealth(ctx: MockCtx): Promise<Record<string, unknown>> {
+  return ctx.toolDefs.get('cache_guard_health')!.execute({});
 }
 
 describe('DFX: High Frequency', () => {
-  let ctx: ReturnType<typeof makeMockCtx>;
+  let ctx: MockCtx;
 
   beforeEach(async () => {
     ctx = makeMockCtx();
     await setup(ctx);
   });
 
-  it('50+帧/秒不丢失工具集变更', () => {
+  it('50+帧/秒不丢失工具集变更', async () => {
     for (let i = 0; i < 100; i++) {
       ctx.handlers.get('agent/assistant-stream')!({ tokenDelta: 50, messageCount: i });
     }
     ctx.handlers.get('tools/pre-execute')!({ toolSchemas: ['initial_tool'] });
-    ctx.pushed.length = 0;
     ctx.handlers.get('tools/pre-execute')!({ toolSchemas: ['new_tool'] });
-    const hasToolsetChange = ctx.pushed.some(
-      (p) => (p as { payload: { triggerReason: string } }).payload?.triggerReason === 'toolset_change',
-    );
-    expect(hasToolsetChange).toBe(true);
+    const health = await readHealth(ctx);
+    expect(health.triggerReason).toBe('toolset_change');
   });
 
-  it('50+帧/秒不丢失系统提示变更', () => {
+  it('50+帧/秒不丢失系统提示变更', async () => {
     for (let i = 0; i < 100; i++) {
       ctx.handlers.get('agent/assistant-stream')!({ tokenDelta: 50, messageCount: i });
     }
-    ctx.pushed.length = 0;
     ctx.handlers.get('session/event')!({ type: 'system_prompt_change', systemPrompt: 'prompt_a' });
     ctx.handlers.get('session/event')!({ type: 'system_prompt_change', systemPrompt: 'prompt_b' });
-    const hasPromptChange = ctx.pushed.some(
-      (p) => (p as { payload: { triggerReason: string } }).payload?.triggerReason === 'system_prompt_rewrite',
-    );
-    expect(hasPromptChange).toBe(true);
+    const health = await readHealth(ctx);
+    expect(health.triggerReason).toBe('system_prompt_rewrite');
   });
 
   it('高频下单事件 ≤5ms', () => {

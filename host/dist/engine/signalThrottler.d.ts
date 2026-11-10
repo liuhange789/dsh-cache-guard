@@ -9,3 +9,4 @@ export declare class SignalThrottler {
     shouldRepaint(level: string, now: number): boolean;
     reset(): void;
 }
+//# sourceMappingURL=signalThrottler.d.ts.map
