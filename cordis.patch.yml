@@ -1,4 +1,4 @@
-# Cordis Framework Patch Declaration for dsh-cache-guard
+# Cordis Framework Patch Declaration for dsh-prompt-cache-guard
 - insert:
-    - id: dsh-cache-guard
-      name: dsh-cache-guard
+    - id: dsh-prompt-cache-guard
+      name: dsh-prompt-cache-guard

@@ -1,10 +1,12 @@
-# dsh-cache-guard
+# dsh-prompt-cache-guard
 
-DSH 缓存健康度守卫与省钱教练 — 事前干预，不是事后计费面板。
+DSH 提示缓存健康度守卫与省钱教练 — 事前干预，不是事后计费面板。
 
 ## 简介
 
-`dsh-cache-guard` 是一个 [DSH](https://github.com/deepseek-ai/dsh) (DeepSeek Harness) 插件，在会话过程中监听缓存失效信号，给出绿/黄/红健康度、一行干预建议与 PTC 提示，引导用户调整会话行为，降低 KV Cache 失效导致的成本浪费。
+`dsh-prompt-cache-guard` 是一个 [DSH](https://github.com/deepseek-ai/dsh) (DeepSeek Harness) 插件，在会话过程中监听缓存失效信号，给出绿/黄/红健康度、一行干预建议与 PTC 提示，引导用户调整会话行为，降低 KV Cache 失效导致的成本浪费。
+
+> **与 npm 上同名包无关**：npm 上的 `dsh-cache-guard@0.4.0` 由 `loonylabs-dev` 维护，是另一套实现（对每次上下文重写先定价、默认询问用户、报告冷读），**不是本仓库**。本插件在 npm 上的包名是 `dsh-prompt-cache-guard`，仓库仍是 `liuhange789/dsh-cache-guard`。安装时请认准 `dsh-prompt-cache-guard`。
 
 ### 核心能力
 
@@ -27,7 +29,7 @@ DSH 缓存健康度守卫与省钱教练 — 事前干预，不是事后计费�
 Host-only 插件（`inject: ['tools']`），信号通过两个工具对外提供：
 
 ```
-dsh-cache-guard/
+dsh-prompt-cache-guard/
 ├── host/          # Host 侧：事件监听 + 信号引擎 + 工具注册
 │   └── src/
 │       ├── listeners/    # 三事件监听器
@@ -50,7 +52,10 @@ dsh-cache-guard/
 ## 安装
 
 ```bash
-# 从仓库安装（读取根 package.json 的 main → host/dist/index.js，并按 cordis.patch.yml 注入）
+# 从 npm 安装（包名 dsh-prompt-cache-guard）
+dsh plugin add dsh-prompt-cache-guard
+
+# 或从仓库安装（读取根 package.json 的 main → host/dist/index.js，并按 cordis.patch.yml 注入）
 dsh plugin add github:liuhange789/dsh-cache-guard
 
 # 重启 DSH
@@ -64,7 +69,7 @@ dsh web
 npm run build
 
 # 将整个包目录复制到 DSH 插件目录
-cp -r . ~/.dsh/plugins/dsh-cache-guard
+cp -r . ~/.dsh/plugins/dsh-prompt-cache-guard
 ```
 
 ## 配置

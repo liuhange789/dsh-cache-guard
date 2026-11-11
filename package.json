@@ -1,5 +1,5 @@
 {
-  "name": "dsh-cache-guard",
+  "name": "dsh-prompt-cache-guard",
   "version": "0.1.1",
   "description": "DSH 缓存健康度守卫与省钱教练",
   "type": "module",
